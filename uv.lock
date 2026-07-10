@@ -278,7 +278,6 @@ wheels = [
 
 [[package]]
 name = "jsonify-optuna"
-version = "0.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "optuna" },

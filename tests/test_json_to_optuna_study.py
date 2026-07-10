@@ -1,9 +1,12 @@
 from __future__ import annotations
 
+import warnings
+
 import optuna
 from optuna.trial import TrialState
 import pytest
 
+import jsonify_optuna
 from jsonify_optuna import json_to_optuna_study
 from jsonify_optuna import jsonify
 
@@ -146,6 +149,56 @@ def test_directions_preserved() -> None:
         json_data = jsonify(study)
         reconstructed = json_to_optuna_study(json_data)
         assert jsonify(reconstructed)["directions"] == directions
+
+
+def test_version_fields_in_jsonify_output() -> None:
+    study = optuna.create_study()
+    study.optimize(_single_objective, n_trials=1)
+    result = jsonify(study)
+
+    assert result["jsonify_optuna_version"] == jsonify_optuna.__version__
+    assert result["optuna_version"] == optuna.__version__
+
+
+def test_no_warning_on_matching_versions() -> None:
+    study = optuna.create_study()
+    study.optimize(_single_objective, n_trials=1)
+    json_data = jsonify(study)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        json_to_optuna_study(json_data)
+
+
+def test_warning_on_jsonify_optuna_version_mismatch() -> None:
+    study = optuna.create_study()
+    study.optimize(_single_objective, n_trials=1)
+    json_data = jsonify(study)
+    json_data["jsonify_optuna_version"] = "0.0.0"
+
+    with pytest.warns(UserWarning):
+        json_to_optuna_study(json_data)
+
+
+def test_warning_on_optuna_version_mismatch() -> None:
+    study = optuna.create_study()
+    study.optimize(_single_objective, n_trials=1)
+    json_data = jsonify(study)
+    json_data["optuna_version"] = "0.0.0"
+
+    with pytest.warns(UserWarning):
+        json_to_optuna_study(json_data)
+
+
+def test_warning_when_version_fields_absent() -> None:
+    study = optuna.create_study()
+    study.optimize(_single_objective, n_trials=1)
+    json_data = jsonify(study)
+    del json_data["jsonify_optuna_version"]
+    del json_data["optuna_version"]
+
+    with pytest.warns(UserWarning):
+        json_to_optuna_study(json_data)
 
 
 def test_mixed_trial_states_roundtrip() -> None:

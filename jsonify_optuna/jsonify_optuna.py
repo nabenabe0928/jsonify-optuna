@@ -1,13 +1,17 @@
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 from typing import TypedDict
 
 import optuna
-from optuna.trial import TrialState
 from optuna.distributions import CategoricalDistribution
 from optuna.distributions import FloatDistribution
 from optuna.distributions import IntDistribution
+from optuna.trial import TrialState
+from optuna import __version__ as optuna_ver
+
+from jsonify_optuna._version import __version__ as jsonify_ver
 
 
 if TYPE_CHECKING:
@@ -36,6 +40,8 @@ class TrialType(TypedDict):
 
 
 class StudyType:
+    jsonify_optuna_version: str
+    optuna_version: str
     trials: list[TrialType]
     best_trial_indices: list[int]
     directions: list[Literal["minimize", "maximize"]]
@@ -48,6 +54,8 @@ def jsonify(
 ) -> StudyType:
     states = states or [state for state in TrialState]
     study_json = {
+        "jsonify_optuna_version": jsonify_ver,
+        "optuna_version": optuna_ver,
         "directions": [dire.name.lower() for dire in study.directions],
         "user_attrs": study.user_attrs,
         "metric_names": study.metric_names,
@@ -81,6 +89,19 @@ def jsonify(
 
 
 def json_to_optuna_study(study_json: StudyType) -> optuna.Study:
+    js_jsonify_ver = study_json.get("jsonify_optuna_version")
+    js_optuna_ver = study_json.get("optuna_version")
+    template = (
+        "{target} version mismatch: JSON was created with {old_ver}, "
+        "but the current version is {new_ver}"
+    )
+    if js_jsonify_ver is None or js_jsonify_ver != jsonify_ver:
+        msg = template.format(target="jsonify-optuna", old_ver=js_jsonify_ver, new_ver=jsonify_ver)
+        warnings.warn(msg, stacklevel=2)
+    if js_optuna_ver is None or js_optuna_ver != optuna_ver:
+        msg = template.format(target="optuna", old_ver=js_optuna_ver, new_ver=optuna_ver)
+        warnings.warn(msg, stacklevel=2)
+
     study = optuna.create_study(directions=study_json["directions"])
     for key, value in study_json["user_attrs"].items():
         study.set_user_attr(key, value)
