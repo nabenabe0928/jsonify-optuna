@@ -87,7 +87,7 @@ def load_study(
     if storage is not None:
         if rdb_url is not None or journal_path is not None:
             raise ValueError(
-                f"{storage=} is provided but either {rdb_url=} or {journal_path=} is also specified."
+                f"storage is provided but either {rdb_url=} or {journal_path=} is also specified."
             )
     elif rdb_url is not None:
         if journal_path is not None:
