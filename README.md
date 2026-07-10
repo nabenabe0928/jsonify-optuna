@@ -28,6 +28,14 @@ result = jsonify(study, states=[TrialState.COMPLETE])
 result = jsonify(study)
 ```
 
+Reconstruct an `optuna.Study` from a JSON dict:
+
+```python
+from jsonify_optuna import json_to_optuna_study
+
+study = json_to_optuna_study(result)
+```
+
 If you have a study stored in a backend, you can load it as follows:
 
 ```python
@@ -81,6 +89,14 @@ Distribution formats:
 
 - **Int/Float**: `{"low": ..., "high": ..., "step": ..., "log": ...}`
 - **Categorical**: `{"choices": [...]}`
+
+### `json_to_optuna_study(study_json)`
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `study_json` | `StudyType` | A dict produced by `jsonify()`. |
+
+Returns an in-memory `optuna.Study` with directions, user attributes, metric names, and all trials reconstructed from the JSON dict.
 
 ### `load_study(*, study_name=None, storage=None, journal_path=None, rdb_url=None)`
 
