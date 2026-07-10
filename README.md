@@ -2,6 +2,9 @@
 
 Convert an [Optuna](https://github.com/optuna/optuna) Study into a plain, JSON-serializable Python dict.
 
+> [!IMPORTANT]
+> If you would like to compress the resulting JSON file the most, use the `gzip` compression.
+
 ## Installation
 
 ```bash
