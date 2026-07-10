@@ -5,6 +5,9 @@ from typing import TypedDict
 
 import optuna
 from optuna.trial import TrialState
+from optuna.distributions import CategoricalDistribution
+from optuna.distributions import FloatDistribution
+from optuna.distributions import IntDistribution
 
 
 if TYPE_CHECKING:
@@ -59,12 +62,10 @@ def jsonify(
             best_trial_indices.append(len(results))
         dists = {}
         for p, d in t.distributions.items():
-            if isinstance(d, optuna.distributions.CategoricalDistribution):
+            if isinstance(d, CategoricalDistribution):
                 dists[p] = {"choices": d.choices}
                 continue
-            assert isinstance(
-                d, (optuna.distributions.IntDistribution, optuna.distributions.FloatDistribution)
-            )
+            assert isinstance(d, (IntDistribution, FloatDistribution))
             dists[p] = {"low": d.low, "high": d.high, "step": d.step, "log": d.log}
         row = {
             "state": t.state.name.lower(),
@@ -77,6 +78,39 @@ def jsonify(
         results.append(row)
     study_json |= {"trials": results, "best_trial_indices": best_trial_indices}
     return study_json
+
+
+def json_to_optuna_study(study_json: StudyType) -> optuna.Study:
+    study = optuna.create_study(directions=study_json["directions"])
+    for key, value in study_json["user_attrs"].items():
+        study.set_user_attr(key, value)
+    if study_json["metric_names"] is not None:
+        study.set_metric_names(study_json["metric_names"])
+    state_map = {s.name.lower(): s for s in TrialState}
+    for trial_json in study_json["trials"]:
+        dists: dict[str, optuna.distributions.BaseDistribution] = {}
+        for name, dist_json in trial_json["distributions"].items():
+            if (choices := dist_json.get("choices")) is not None:
+                dists[name] = CategoricalDistribution(choices)
+                continue
+            low = dist_json["low"]
+            high = dist_json["high"]
+            step = dist_json["step"]
+            log = dist_json["log"]
+            if all(isinstance(v, int) for v in [low, high, step]):
+                dists[name] = IntDistribution(low=low, high=high, step=step, log=log)
+            else:
+                dists[name] = FloatDistribution(low=low, high=high, step=step, log=log)
+        trial = optuna.trial.create_trial(
+            state=state_map[trial_json["state"]],
+            values=trial_json["values"],
+            params=trial_json["params"],
+            distributions=dists,
+            user_attrs=trial_json["user_attrs"],
+            intermediate_values=trial_json["intermediate_values"] or None,
+        )
+        study.add_trial(trial)
+    return study
 
 
 def load_study(
