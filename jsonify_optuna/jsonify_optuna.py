@@ -29,6 +29,11 @@ if TYPE_CHECKING:
     class CategoricalDistributionType(TypedDict):
         choices: list[CategoricalChoiceType]
 
+    class SchemaInfoType:
+        jsonify_optuna_version: str
+        optuna_version: str
+        filtered_states: list[str]
+
 
 class TrialType(TypedDict):
     state: Literal["running", "waiting", "completepruned", "fail"]
@@ -40,8 +45,7 @@ class TrialType(TypedDict):
 
 
 class StudyType:
-    jsonify_optuna_version: str
-    optuna_version: str
+    schema_info: SchemaInfoType
     trials: list[TrialType]
     best_trial_indices: list[int]
     directions: list[Literal["minimize", "maximize"]]
@@ -53,9 +57,13 @@ def jsonify(
     study: optuna.Study, *, states: list[TrialState] | None = None, deepcopy: bool = True
 ) -> StudyType:
     states = states or [state for state in TrialState]
-    study_json = {
+    schema_info = {
         "jsonify_optuna_version": jsonify_ver,
         "optuna_version": optuna_ver,
+        "filtered_states": [state.name.lower() for state in states],
+    }
+    study_json = {
+        "schema_info": schema_info,
         "directions": [dire.name.lower() for dire in study.directions],
         "user_attrs": study.user_attrs,
         "metric_names": study.metric_names,
@@ -89,8 +97,9 @@ def jsonify(
 
 
 def json_to_optuna_study(study_json: StudyType) -> optuna.Study:
-    js_jsonify_ver = study_json.get("jsonify_optuna_version")
-    js_optuna_ver = study_json.get("optuna_version")
+    schema_info = study_json.get("schema_info", {})
+    js_jsonify_ver = schema_info.get("jsonify_optuna_version")
+    js_optuna_ver = schema_info.get("optuna_version")
     template = (
         "{target} version mismatch: JSON was created with {old_ver}, "
         "but the current version is {new_ver}"

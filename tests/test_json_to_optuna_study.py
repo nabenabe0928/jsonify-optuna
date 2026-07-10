@@ -156,8 +156,8 @@ def test_version_fields_in_jsonify_output() -> None:
     study.optimize(_single_objective, n_trials=1)
     result = jsonify(study)
 
-    assert result["jsonify_optuna_version"] == jsonify_optuna.__version__
-    assert result["optuna_version"] == optuna.__version__
+    assert result["schema_info"]["jsonify_optuna_version"] == jsonify_optuna.__version__
+    assert result["schema_info"]["optuna_version"] == optuna.__version__
 
 
 def test_no_warning_on_matching_versions() -> None:
@@ -174,7 +174,7 @@ def test_warning_on_jsonify_optuna_version_mismatch() -> None:
     study = optuna.create_study()
     study.optimize(_single_objective, n_trials=1)
     json_data = jsonify(study)
-    json_data["jsonify_optuna_version"] = "0.0.0"
+    json_data["schema_info"]["jsonify_optuna_version"] = "0.0.0"
 
     with pytest.warns(UserWarning):
         json_to_optuna_study(json_data)
@@ -184,7 +184,7 @@ def test_warning_on_optuna_version_mismatch() -> None:
     study = optuna.create_study()
     study.optimize(_single_objective, n_trials=1)
     json_data = jsonify(study)
-    json_data["optuna_version"] = "0.0.0"
+    json_data["schema_info"]["optuna_version"] = "0.0.0"
 
     with pytest.warns(UserWarning):
         json_to_optuna_study(json_data)
@@ -194,8 +194,7 @@ def test_warning_when_version_fields_absent() -> None:
     study = optuna.create_study()
     study.optimize(_single_objective, n_trials=1)
     json_data = jsonify(study)
-    del json_data["jsonify_optuna_version"]
-    del json_data["optuna_version"]
+    del json_data["schema_info"]
 
     with pytest.warns(UserWarning):
         json_to_optuna_study(json_data)
