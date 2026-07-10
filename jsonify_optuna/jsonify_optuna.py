@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from typing import TypedDict
 
 import optuna
 from optuna.trial import TrialState
@@ -9,7 +10,6 @@ from optuna.trial import TrialState
 if TYPE_CHECKING:
     from typing import Any
     from typing import Literal
-    from typing import TypedDict
 
     from optuna.distributions import CategoricalChoiceType
 
@@ -22,20 +22,22 @@ if TYPE_CHECKING:
     class CategoricalDistributionType(TypedDict):
         choices: list[CategoricalChoiceType]
 
-    class TrialType(TypedDict):
-        state: Literal["running", "waiting", "completepruned", "fail"]
-        values: list[float]
-        params: dict[str, int | float | CategoricalChoiceType]
-        user_attrs: dict[str, Any]
-        intermediate_values: list[float]
-        distributions: dict[str, NumericalDistributionType | CategoricalDistributionType]
 
-    class StudyType:
-        trials: list[TrialType]
-        best_trial_indices: list[int]
-        directions: list[Literal["minimize", "maximize"]]
-        user_attrs: dict[str, Any]
-        metric_names: list[str]
+class TrialType(TypedDict):
+    state: Literal["running", "waiting", "completepruned", "fail"]
+    values: list[float]
+    params: dict[str, int | float | CategoricalChoiceType]
+    user_attrs: dict[str, Any]
+    intermediate_values: list[float]
+    distributions: dict[str, NumericalDistributionType | CategoricalDistributionType]
+
+
+class StudyType:
+    trials: list[TrialType]
+    best_trial_indices: list[int]
+    directions: list[Literal["minimize", "maximize"]]
+    user_attrs: dict[str, Any]
+    metric_names: list[str]
 
 
 def jsonify(
